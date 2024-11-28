@@ -1,0 +1,55 @@
+module digital_thermometer (
+    input clk,           // Clock signal
+    input reset,         // Reset button
+    input [9:0] adc_data, // ADC output (10-bit digital data from the sensor)
+    output reg [6:0] seg, // 7-segment display output
+    output reg alert      // Alert if temperature exceeds threshold
+);
+
+    wire [7:0] temp_celsius;  // Temperature in Celsius (processed)
+
+    // Instantiate the temperature calculation module
+    temp_processor temp_proc (
+        .adc_data(adc_data),
+        .temp_out(temp_celsius)
+    );
+
+    // Display temperature on 7-segment
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            seg <= 7'b0000000; // Reset display
+            alert <= 0;        // Reset alert
+        end else begin
+            seg <= temp_to_7seg(temp_celsius % 10); // Display last digit
+            alert <= (temp_celsius > 50);     // Trigger alert if > 50°C
+        end
+    end
+
+    // Function to convert temperature to 7-segment encoding
+    function [6:0] temp_to_7seg(input [3:0] digit);
+        case (digit)
+            4'd0: temp_to_7seg = 7'b0111111;
+            4'd1: temp_to_7seg = 7'b0000110;
+            4'd2: temp_to_7seg = 7'b1011011;
+            4'd3: temp_to_7seg = 7'b1001111;
+            4'd4: temp_to_7seg = 7'b1100110;
+            4'd5: temp_to_7seg = 7'b1101101;
+            4'd6: temp_to_7seg = 7'b1111101;
+            4'd7: temp_to_7seg = 7'b0000111;
+            4'd8: temp_to_7seg = 7'b1111111;
+            4'd9: temp_to_7seg = 7'b1100111;
+            default: temp_to_7seg = 7'b0000000; // Error
+        endcase
+    endfunction
+
+endmodule
+
+module temp_processor (
+    input [9:0] adc_data,  // 10-bit ADC data
+    output reg [7:0] temp_out // 8-bit temperature in Celsius
+);
+    always @(*) begin
+        // Assuming 10mV/°C and ADC reference voltage of 5V
+        temp_out = (adc_data * 500) / 1024; // Convert ADC value to °C
+    end
+endmodule
