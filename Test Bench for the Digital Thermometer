@@ -1,0 +1,39 @@
+module tb_digital_thermometer;
+
+    reg clk, reset;
+    reg [9:0] adc_data;
+    wire [6:0] seg;
+    wire alert;
+
+    // Instantiate the thermometer
+    digital_thermometer uut (
+        .clk(clk),
+        .reset(reset),
+        .adc_data(adc_data),
+        .seg(seg),
+        .alert(alert)
+    );
+
+    // Clock generation
+    always #5 clk = ~clk;
+
+    initial begin
+        // Initialize waveform dump
+        $dumpfile("digital_thermometer.vcd"); // Specify VCD file name
+        $dumpvars(0, tb_digital_thermometer); // Dump all variables in the module
+        
+        // Initialize signals
+        clk = 0; reset = 1; adc_data = 10'b0;
+        #10 reset = 0;
+
+        // Simulate various ADC values
+        #20 adc_data = 10'd205; // ~10°C
+        #20 adc_data = 10'd512; // ~25°C
+        #20 adc_data = 10'd820; // ~40°C
+        #20 adc_data = 10'd1023; // ~50°C (Alert)
+
+        // Stop simulation
+        #50 $finish;
+    end
+
+endmodule
